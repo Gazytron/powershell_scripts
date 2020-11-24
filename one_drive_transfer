@@ -1,0 +1,42 @@
+$SiteURL = "https://one_drive_url"
+$Password  = ConvertTo-SecureString ‘password’ -AsPlainText -Force
+$User = "user"
+$Folder = 'original file location'
+$DocLibName = "Documents"
+$foldername = "F1"
+$foldername2 = "F2"
+$foldername3 = "F3"
+$foldername4 = "F4"
+$foldername5 = "F5"
+
+Add-Type -Path "C:\Program Files\Common Files\Microsoft Shared\Web Server Extensions\15\ISAPI\Microsoft.SharePoint.Client.dll"
+Add-Type -Path "C:\Program Files\Common Files\Microsoft Shared\Web Server Extensions\15\ISAPI\Microsoft.SharePoint.Client.Runtime.dll"
+
+$Context = New-Object Microsoft.SharePoint.Client.ClientContext($SiteURL)
+$Creds = New-Object Microsoft.SharePoint.Client.SharePointOnlineCredentials($User,$Password)
+
+$Context.Credentials = $Creds
+
+$List = $Context.Web.Lists.GetByTitle("$DocLibName")
+$Context.Load($List)
+$Context.Load($List.RootFolder)
+$Context.ExecuteQuery()
+$ServerRelativeUrlOfRootFolder = $List.RootFolder.ServerRelativeUrl
+
+#$uploadFolderUrl=  $ServerRelativeUrlOfRootFolder+"/"+$foldername
+$finalpath=$ServerRelativeUrlOfRootFolder+"/"+$foldername+"/"+$foldername2+"/"+$foldername3+"/"+$foldername4+"/"+$foldername5
+
+
+Foreach ($File in (dir $Folder -File))
+{
+$FileStream = New-Object IO.FileStream($File.FullName,[System.IO.FileMode]::Open)
+$FileCreationInfo = New-Object Microsoft.SharePoint.Client.FileCreationInformation
+$FileCreationInfo.Overwrite = $true
+$FileCreationInfo.ContentStream = $FileStream
+#$FileCreationInfo.URL = $File
+$FileCreationInfo.URL = $finalpath + "/" + $File.Name
+$Upload = $List.RootFolder.Files.Add($FileCreationInfo)
+$Context.Load($Upload)
+$Context.ExecuteQuery()
+
+}
