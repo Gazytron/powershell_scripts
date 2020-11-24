@@ -1,0 +1,66 @@
+$date = Get-Date
+$year = $date.Year
+$month = $date.Month
+$day = $date.Day
+$date2 = Get-Date -Year $year -Month $month -Day $day -Hour 0 -Minute 0 -Second 0
+
+# create a new DateTime object set to the first day of a given month and year
+$startOfMonth = Get-Date -Year $year -Month $month -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0
+# add a month and subtract the smallest possible time unit
+$endOfMonth = ($startOfMonth).AddMonths(1).AddHours(0).AddMinutes(0).AddSeconds(-1)
+#beginning of a previous month
+$begOfPrevMonth = ($startOfMonth).AddMonths(-1).AddHours(0).AddMinutes(0).AddSeconds(0).AddMilliseconds(-1)
+
+#previous month name
+$prevMonth = (Get-Culture).DateTimeFormat.GetAbbreviatedMonthName((Get-Date).AddMonths(-1).Month)
+
+$bstart = ($date2).AddDays(-1)
+$bEnd = ($date2).AddDays(0)
+
+
+$targetClientFolder = '\\anyserver1\LogFiles'
+$targetServerFolder = '\\anyserver2\LogFiles'
+
+$destination = '\\anyserver3\LogFIles\'
+$serverName = 'ANYSERVERNAME123'
+
+
+Get-ChildItem $targetClientFolder -Recurse | Where-Object { $_ -is [System.IO.FileInfo] } | ForEach-Object {
+	If ($_.Extension -eq ".zip" -OR $_.Extension -eq ".txt")
+	{
+            If ($_.LastWriteTime -lt $bEnd -AND $_.LastWriteTime -ge $bStart)
+            {  
+            $mm=(Get-Culture).DateTimeFormat.GetAbbreviatedMonthName($_.LastWriteTime.Month) 
+            $yy=$_.LastWriteTime.Year 
+            if (!(Test-Path "$destination$yy\$mm\$serverName-client")){
+                New-Item -Path "$destination$yy\$mm\$serverName-client" -ItemType "directory"
+                }          
+            Move-Item -Path $_.FullName -Destination "$destination$yy\$mm\$serverName-client"
+            
+            $_.FullName +"-client" | Out-File -FilePath "$destination$yy\$mm\$serverName-$month$day$year.txt" -append
+
+            #$_.FullName | remove-item 
+            }
+	}
+}
+
+Get-ChildItem $targetServerFolder -Recurse | Where-Object { $_ -is [System.IO.FileInfo] } | ForEach-Object {
+	If ($_.Extension -eq ".zip" -OR $_.Extension -eq ".txt")
+	{
+            If ($_.LastWriteTime -lt $bEnd -AND $_.LastWriteTime -ge $bStart)
+            {  
+            $mm=(Get-Culture).DateTimeFormat.GetAbbreviatedMonthName($_.LastWriteTime.Month) 
+            $yy=$_.LastWriteTime.Year
+            if (!(Test-Path "$destination$yy\$mm\$serverName-server")){
+                New-Item -Path "$destination$yy\$mm\$serverName-server" -ItemType "directory"
+                }         
+            Move-Item -Path $_.FullName -Destination "$destination$yy\$mm\$serverName-server"
+            
+            $_.FullName+"-server"  | Out-File -FilePath "$destination$yy\$mm\$serverName-$month$day$year.txt" -append
+
+            #$_.FullName | remove-item 
+            }
+	}
+}
+
+
